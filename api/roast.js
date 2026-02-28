@@ -1,4 +1,4 @@
-const { GoogleGenerativeAI } = require("@google/generative-ai");
+const https = require("https");
 
 const SYSTEM = `You are Judge — a savage, deadpan Indian roast AI. You speak in Hinglish. You NEVER give advice, motivation, or comfort. You ONLY roast. You are calm, unimpressed, and brutally funny. Like a toxic senior who destroys you without raising his voice.
 
@@ -19,33 +19,47 @@ module.exports = async function handler(req, res) {
   if (req.method === "OPTIONS") return res.status(200).end();
   if (req.method !== "POST") return res.status(405).end();
 
-  if (!process.env.GEMINI_API_KEY) {
-    return res.status(500).json({ text: "GEMINI_API_KEY missing in Vercel!" });
+  if (!process.env.SARVAM_API_KEY) {
+    return res.status(500).json({ text: "SARVAM_API_KEY missing in Vercel!" });
   }
 
   try {
     const { prompt, history } = req.body;
 
-    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-    const model = genAI.getGenerativeModel({
-      model: "gemini-2.0-flash",
-      systemInstruction: SYSTEM,
-      generationConfig: {
-        maxOutputTokens: 300,
-        temperature: 1.2,
+    // Build messages array
+    const messages = [
+      { role: "system", content: SYSTEM },
+      ...(history || []).map(m => ({
+        role: m.role === "model" ? "assistant" : "user",
+        content: m.parts?.[0]?.text || m.text || ""
+      })),
+      { role: "user", content: prompt }
+    ];
+
+    const body = JSON.stringify({
+      model: "sarvam-m",
+      messages,
+      max_tokens: 300,
+      temperature: 1.1,
+    });
+
+    const response = await fetch("https://api.sarvam.ai/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "api-subscription-key": process.env.SARVAM_API_KEY,
       },
+      body,
     });
 
-    const chat = model.startChat({
-      history: (history || []).map(m => ({
-        role: m.role,
-        parts: [{ text: m.parts?.[0]?.text || m.text || "" }]
-      }))
-    });
+    const data = await response.json();
 
-    const result = await chat.sendMessage(prompt);
-    const text = result.response.text();
+    if (!response.ok) {
+      console.error("Sarvam error:", data);
+      return res.status(500).json({ text: "Error: " + (data.message || JSON.stringify(data)) });
+    }
 
+    const text = data.choices?.[0]?.message?.content || "...";
     res.status(200).json({ text });
 
   } catch (error) {
