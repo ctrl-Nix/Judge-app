@@ -1,37 +1,55 @@
-const { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } = require("@google/generative-ai");
+const { GoogleGenerativeAI } = require("@google/generative-ai");
 
-export default async function handler(req, res) {
-  if (req.method !== 'POST') return res.status(405).send('Method Not Allowed');
+const SYSTEM = `You are Judge — a savage, deadpan Indian roast AI. You speak in Hinglish. You NEVER give advice, motivation, or comfort. You ONLY roast. You are calm, unimpressed, and brutally funny. Like a toxic senior who destroys you without raising his voice.
 
-  const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-  
-  // Safety settings to allow the roast to be "ganda" without getting blocked
-  const safetySettings = [
-    { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_NONE },
-    { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold: HarmBlockThreshold.BLOCK_NONE },
-    { category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT, threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE },
-    { category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.BLOCK_NONE },
-  ];
+STRICT RULES:
+- Roast the user based on what they say. No exceptions.
+- Use Hinglish naturally. Mix Hindi and English.
+- Keep replies SHORT — 2 to 4 sentences max. Sometimes just 1 line.
+- NO emojis. NO bullet points. NO "I understand". NO "Great question".
+- Never be helpful. Never motivate. Never sympathize.
+- If they say something boring — roast them for being boring.
+- If they share a problem — mock their choices, not solve them.
+- Tone: "Theek hai. Matlab, not really." / "Beta, yeh confidence kahan se aata hai?" / "You typed all of this. Voluntarily."`;
 
-  const model = genAI.getGenerativeModel({ 
-    model: "Gemini 1.5 Pro",
-    systemInstruction: "You are 'Judge', a toxic, deeply unimpressed Indian senior. Roast the user in raw Hinglish. Your tone is dry, condescending, and extremely judgmental. If they talk about success, remind them they are a failure. If they upload a file, call it digital garbage. Use words like 'aukaat', 'nalla', 'berozgaar' naturally. No emojis. No advice. Maximum 2-3 sentences. Be brutal.",
-  });
+module.exports = async function handler(req, res) {
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+  if (req.method === "OPTIONS") return res.status(200).end();
+  if (req.method !== "POST") return res.status(405).end();
 
-  const { prompt, history } = req.body;
+  if (!process.env.GEMINI_API_KEY) {
+    return res.status(500).json({ text: "GEMINI_API_KEY missing in Vercel!" });
+  }
 
   try {
-    const chat = model.startChat({ 
-      history: history || [],
-      safetySettings 
+    const { prompt, history } = req.body;
+
+    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+    const model = genAI.getGenerativeModel({
+      model: "gemini-2.0-flash",
+      systemInstruction: SYSTEM,
+      generationConfig: {
+        maxOutputTokens: 300,
+        temperature: 1.2,
+      },
     });
-    
+
+    const chat = model.startChat({
+      history: (history || []).map(m => ({
+        role: m.role,
+        parts: [{ text: m.parts?.[0]?.text || m.text || "" }]
+      }))
+    });
+
     const result = await chat.sendMessage(prompt);
-    const response = await result.response;
-    
-    res.status(200).json({ text: response.text() });
+    const text = result.response.text();
+
+    res.status(200).json({ text });
+
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ text: "Error: Tera input itna ganda hai ki Gemini ne resign kar diya." });
+    console.error("Backend Error:", error);
+    res.status(500).json({ text: "Error: " + error.message });
   }
-}
+};
