@@ -1,266 +1,548 @@
+Index · HTML
+Copy
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Judge — Aukaat Check AI</title>
-    <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Manrope:wght@300;400;500;600&display=swap" rel="stylesheet">
-    <style>
-        :root {
-            --bg: #0a0a0a;
-            --surface: #121211;
-            --border: #1f1f1e;
-            --text: #e8e6e1;
-            --muted: #63615b;
-            --accent: #ff3e00;
-            --serif: 'DM Serif Display', serif;
-            --sans: 'Manrope', sans-serif;
-        }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Judge — Aukaat Check AI</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Manrope:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0a0a0a;
+  --surface: #121211;
+  --border: #1f1f1e;
+  --text: #e8e6e1;
+  --muted: #63615b;
+  --accent: #8b3a2a;
+  --serif: 'DM Serif Display', serif;
+  --sans: 'Manrope', sans-serif;
+}
 
-        body, html { 
-            background: var(--bg); 
-            color: var(--text); 
-            font-family: var(--sans); 
-            margin: 0; 
-            height: 100dvh; 
-            overflow: hidden; 
-        }
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { font-size: 16px; }
 
-        /* --- LANDING --- */
-        #landing {
-            height: 100%;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            padding: 2rem;
-            text-align: center;
-        }
+body, html {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--sans);
+  height: 100dvh;
+  overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+}
 
-        .brand { font-family: var(--serif); font-size: clamp(3rem, 10vw, 5rem); letter-spacing: -2px; }
-        .tagline { color: var(--muted); margin-bottom: 3rem; text-transform: uppercase; letter-spacing: 2px; font-size: 0.8rem; }
+/* LANDING */
+#landing {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  text-align: center;
+}
 
-        .modes {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-            gap: 1.5rem;
-            max-width: 800px;
-            width: 100%;
-        }
+.brand {
+  font-family: var(--serif);
+  font-size: clamp(3.5rem, 10vw, 6rem);
+  letter-spacing: -2px;
+  line-height: 1;
+  margin-bottom: 0.5rem;
+}
 
-        .mode-card {
-            background: var(--surface);
-            border: 1px solid var(--border);
-            padding: 2.5rem;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
+.tagline {
+  color: var(--muted);
+  margin-bottom: 3.5rem;
+  text-transform: uppercase;
+  letter-spacing: 3px;
+  font-size: 0.72rem;
+  font-weight: 500;
+}
 
-        .mode-card:hover { border-color: var(--accent); transform: translateY(-5px); }
-        .mode-card h2 { font-family: var(--serif); font-size: 2rem; margin-bottom: 1rem; }
-        .mode-card p { color: var(--muted); font-size: 0.9rem; line-height: 1.5; }
+.modes {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 1rem;
+  max-width: 680px;
+  width: 100%;
+}
 
-        /* --- CHAT VIEW --- */
-        #chat-view {
-            display: none;
-            flex-direction: column;
-            height: 100dvh;
-        }
+.mode-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  padding: 2rem;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: border-color 0.2s, transform 0.2s;
+  text-align: left;
+}
 
-        .chat-header {
-            padding: 1.2rem 1.5rem;
-            border-bottom: 1px solid var(--border);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
+.mode-card:hover { border-color: var(--accent); transform: translateY(-3px); }
+.mode-card h2 { font-family: var(--serif); font-size: 1.6rem; margin-bottom: 0.6rem; font-weight: 400; }
+.mode-card p { color: var(--muted); font-size: 0.82rem; line-height: 1.6; }
 
-        #messages {
-            flex: 1;
-            overflow-y: auto;
-            padding: 2rem;
-            display: flex;
-            flex-direction: column;
-            gap: 1.5rem;
-            scroll-behavior: smooth;
-        }
+#file-input { display: none; }
 
-        .msg { max-width: 80%; line-height: 1.6; padding: 0.5rem 0; }
-        .msg.user { align-self: flex-end; color: var(--muted); text-align: right; font-size: 0.9rem; }
-        .msg.bot { align-self: flex-start; font-family: var(--serif); font-size: 1.25rem; border-left: 2px solid var(--accent); padding-left: 1.5rem; }
+/* CHAT */
+#chat-view {
+  display: none;
+  flex-direction: column;
+  height: 100dvh;
+}
 
-        /* --- INPUT --- */
-        .input-container {
-            padding: 1.5rem;
-            border-top: 1px solid var(--border);
-            background: var(--bg);
-        }
+.chat-header {
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-shrink: 0;
+}
 
-        .input-wrapper {
-            max-width: 800px;
-            margin: 0 auto;
-            display: flex;
-            gap: 1rem;
-        }
+.chat-brand { font-family: var(--serif); font-size: 1.3rem; color: var(--accent); }
 
-        textarea {
-            flex: 1;
-            background: var(--surface);
-            border: 1px solid var(--border);
-            color: #fff;
-            padding: 1rem;
-            border-radius: 4px;
-            resize: none;
-            outline: none;
-            font-family: var(--sans);
-        }
+.reset-btn {
+  background: none;
+  border: 1px solid var(--border);
+  color: var(--muted);
+  cursor: pointer;
+  padding: 0.35rem 0.9rem;
+  border-radius: 4px;
+  font-family: var(--sans);
+  font-size: 0.72rem;
+  letter-spacing: 0.05em;
+  transition: border-color 0.15s, color 0.15s;
+}
+.reset-btn:hover { border-color: var(--border); color: var(--text); }
 
-        .send-btn { 
-            background: var(--text); 
-            color: #000; 
-            border: none; 
-            padding: 0 1.5rem; 
-            border-radius: 4px; 
-            font-weight: 700; 
-            cursor: pointer; 
-            transition: opacity 0.2s;
-        }
+#messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 2rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  scroll-behavior: smooth;
+}
 
-        .send-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+#messages::-webkit-scrollbar { width: 3px; }
+#messages::-webkit-scrollbar-thumb { background: var(--border); }
 
-        /* --- ANIMATIONS --- */
-        .thinking-dots span {
-            width: 5px; height: 5px; background: var(--muted);
-            display: inline-block; border-radius: 50%;
-            margin: 0 2px; animation: bounce 1.4s infinite;
-        }
-        .thinking-dots span:nth-child(2) { animation-delay: 0.2s; }
-        .thinking-dots span:nth-child(3) { animation-delay: 0.4s; }
-        @keyframes bounce { 0%, 80%, 100% { transform: translateY(0); } 40% { transform: translateY(-5px); } }
+.msg { max-width: 78%; line-height: 1.7; }
 
-        #file-input { display: none; }
-    </style>
+.msg.user {
+  align-self: flex-end;
+  color: var(--muted);
+  font-size: 0.875rem;
+  background: #161615;
+  border: 1px solid var(--border);
+  padding: 0.6rem 1rem;
+  border-radius: 4px;
+}
+
+.msg.bot {
+  align-self: flex-start;
+  font-family: var(--serif);
+  font-size: 1.2rem;
+  border-left: 2px solid var(--accent);
+  padding-left: 1.25rem;
+  color: var(--text);
+}
+
+.file-badge {
+  display: inline-block;
+  font-size: 0.68rem;
+  color: var(--accent);
+  border: 1px solid var(--accent);
+  padding: 0.1rem 0.5rem;
+  border-radius: 2px;
+  margin-bottom: 0.3rem;
+  font-family: var(--sans);
+  letter-spacing: 0.05em;
+  opacity: 0.7;
+}
+
+/* AUKAAT CHECK */
+.aukaat-block {
+  align-self: stretch;
+  border-top: 1px solid var(--accent);
+  padding-top: 1.25rem;
+  margin-top: 0.5rem;
+}
+.aukaat-label {
+  font-size: 0.65rem;
+  font-weight: 600;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 0.5rem;
+  font-family: var(--sans);
+}
+.aukaat-text {
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: 1.1rem;
+  color: var(--text);
+}
+
+/* INPUT */
+.input-area {
+  flex-shrink: 0;
+  border-top: 1px solid var(--border);
+  padding: 1rem 1.5rem;
+  background: var(--bg);
+}
+
+.input-inner {
+  max-width: 760px;
+  margin: 0 auto;
+  display: flex;
+  gap: 0.75rem;
+  align-items: flex-end;
+}
+
+.attach-btn {
+  flex-shrink: 0;
+  width: 38px; height: 38px;
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 1rem;
+  display: flex; align-items: center; justify-content: center;
+  position: relative;
+  transition: border-color 0.15s, color 0.15s;
+}
+.attach-btn input { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; }
+.attach-btn:hover { border-color: var(--accent); color: var(--text); }
+.attach-btn.active { border-color: var(--accent); color: var(--accent); }
+
+#user-input {
+  flex: 1;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 0.65rem 0.9rem;
+  color: var(--text);
+  font-family: var(--sans);
+  font-size: 0.875rem;
+  resize: none;
+  outline: none;
+  line-height: 1.55;
+  max-height: 120px;
+  overflow-y: auto;
+  transition: border-color 0.15s;
+}
+#user-input:focus { border-color: #333331; }
+#user-input::placeholder { color: #3a3935; }
+
+.send-btn {
+  flex-shrink: 0;
+  width: 38px; height: 38px;
+  background: var(--text);
+  border: none;
+  border-radius: 4px;
+  color: var(--bg);
+  font-size: 1rem;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: opacity 0.15s;
+}
+.send-btn:hover { opacity: 0.85; }
+.send-btn:disabled { opacity: 0.25; cursor: not-allowed; }
+
+.attach-label {
+  font-size: 0.68rem;
+  color: #3a3935;
+  text-align: center;
+  margin-top: 0.5rem;
+  max-width: 760px;
+  margin-left: auto;
+  margin-right: auto;
+  display: block;
+}
+
+/* THINKING */
+.thinking { display: flex; gap: 4px; align-items: center; padding: 0.4rem 0; }
+.thinking span {
+  width: 4px; height: 4px; border-radius: 50%; background: var(--muted);
+  animation: pulse 1.4s ease-in-out infinite;
+}
+.thinking span:nth-child(2) { animation-delay: 0.2s; }
+.thinking span:nth-child(3) { animation-delay: 0.4s; }
+
+@keyframes pulse {
+  0%, 80%, 100% { opacity: 0.2; transform: scale(0.9); }
+  40% { opacity: 1; transform: scale(1.1); }
+}
+
+@keyframes msgIn {
+  from { opacity: 0; transform: translateY(5px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.msg { animation: msgIn 0.2s ease both; }
+
+@media (max-width: 600px) {
+  .msg { max-width: 92%; }
+  #messages { padding: 1.25rem 1rem; }
+  .input-area { padding: 0.75rem 1rem; }
+}
+</style>
 </head>
 <body>
 
+<!-- LANDING -->
 <div id="landing">
-    <div class="brand">Judge.</div>
-    <p class="tagline">Hinglish Roast. No Mercy. No Logic.</p>
-    
-    <div class="modes">
-        <div class="mode-card" onclick="document.getElementById('file-input').click()">
-            <h2>Roast my File</h2>
-            <p>Upload Resume, Code, or PDF. I'll explain why it's embarrassing.</p>
-            <input type="file" id="file-input" onchange="handleFile(event)">
-        </div>
-        
-        <div class="mode-card" onclick="startChat('talk')">
-            <h2>Roast my Life</h2>
-            <p>Chat with me. Let me humble your existence real quick.</p>
-        </div>
+  <div class="brand">Judge.</div>
+  <p class="tagline">Hinglish Roast &nbsp;·&nbsp; No Mercy &nbsp;·&nbsp; No Advice</p>
+
+  <div class="modes">
+    <div class="mode-card" onclick="document.getElementById('file-input').click()">
+      <h2>Roast my File</h2>
+      <p>Upload resume, PDF, code, notes. I will explain why it is embarrassing.</p>
+      <input type="file" id="file-input" accept=".pdf,.txt,.md,.js,.py,.doc,.docx,image/*" onchange="handleFile(event)" />
     </div>
+    <div class="mode-card" onclick="startChat()">
+      <h2>Roast my Life</h2>
+      <p>Just talk. Tell me about your day, your plans, your dreams. I will handle the rest.</p>
+    </div>
+  </div>
 </div>
 
+<!-- CHAT -->
 <div id="chat-view">
-    <div class="chat-header">
-        <span style="font-family: var(--serif); font-size: 1.5rem; color: var(--accent);">Judge.</span>
-        <button onclick="location.reload()" style="background:none; border: 1px solid var(--border); color: var(--muted); cursor: pointer; padding: 5px 12px; border-radius: 4px;">Reset</button>
+  <div class="chat-header">
+    <span class="chat-brand">Judge.</span>
+    <button class="reset-btn" onclick="location.reload()">New Session</button>
+  </div>
+  <div id="messages"></div>
+  <div class="input-area">
+    <div class="input-inner">
+      <button class="attach-btn" id="attach-btn" title="Attach file">
+        <input type="file" id="chat-file" accept=".pdf,.txt,.md,.js,.py,.doc,.docx,image/*" onchange="handleChatFile(event)" />
+        &#x2B06;
+      </button>
+      <textarea id="user-input" rows="1" placeholder="Bol." onkeydown="checkEnter(event)" oninput="autoResize(this)"></textarea>
+      <button class="send-btn" id="send-btn" onclick="sendMessage()">&#x2192;</button>
     </div>
-    <div id="messages"></div>
-    <div class="input-container">
-        <div class="input-wrapper">
-            <textarea id="user-input" rows="1" placeholder="Bol na..." onkeydown="checkEnter(event)"></textarea>
-            <button class="send-btn" id="send-btn" onclick="sendMessage()">Send</button>
-        </div>
-    </div>
+    <span class="attach-label" id="attach-label"></span>
+  </div>
 </div>
 
 <script>
-    let chatHistory = [];
+  // PDF.js worker
+  if (typeof pdfjsLib !== 'undefined') {
+    pdfjsLib.GlobalWorkerOptions.workerSrc =
+      'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+  }
 
-    function startChat(mode) {
-        document.getElementById('landing').style.display = 'none';
-        document.getElementById('chat-view').style.display = 'flex';
-        if(mode === 'talk') {
-            appendMessage('bot', "Haan beta, batao. Aaj kis baat ki beizzati karwani hai?");
+  let chatHistory = [];
+  let pendingFilePrompt = null;
+  let msgCount = 0;
+  const MAX_MSGS = 10;
+
+  // ── LANDING ──────────────────────────────────────────────
+  function startChat(openingLine) {
+    document.getElementById('landing').style.display = 'none';
+    document.getElementById('chat-view').style.display = 'flex';
+    const line = openingLine || "Aaj kaise aana hua?";
+    setTimeout(() => appendBot(line), 400);
+  }
+
+  // ── FILE HANDLING ─────────────────────────────────────────
+  async function handleFile(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    startChat(null);
+    await processAndRoastFile(file);
+  }
+
+  async function handleChatFile(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    document.getElementById('attach-label').textContent = file.name + ' — attached';
+    document.getElementById('attach-btn').classList.add('active');
+    pendingFilePrompt = await extractFilePrompt(file);
+  }
+
+  async function extractFilePrompt(file) {
+    if (file.type === 'application/pdf') {
+      try {
+        const arrayBuffer = await file.arrayBuffer();
+        const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+        let fullText = '';
+        for (let i = 1; i <= Math.min(pdf.numPages, 5); i++) {
+          const page = await pdf.getPage(i);
+          const content = await page.getTextContent();
+          fullText += content.items.map(item => item.str).join(' ') + '\n';
         }
+        return `The user uploaded a PDF named "${file.name}". Content:\n\n${fullText.slice(0, 3000)}\n\nRoast this brutally — the content, the effort, the fact that they thought uploading this was a good idea.`;
+      } catch {
+        return `User uploaded a PDF called "${file.name}" but it was unreadable. Roast them for uploading a broken file.`;
+      }
+    } else if (file.type.startsWith('image/')) {
+      return `User uploaded an image called "${file.name}". Roast them for thinking their image deserves your attention.`;
+    } else {
+      try {
+        const text = await file.text();
+        return `The user uploaded a file named "${file.name}". Content:\n\n${text.slice(0, 3000)}\n\nRoast this. The content, the effort, the audacity.`;
+      } catch {
+        return `User uploaded "${file.name}". Roast them for uploading something unreadable.`;
+      }
     }
+  }
 
-    async function handleFile(e) {
-        const file = e.target.files[0];
-        if(!file) return;
-        
-        startChat('file');
-        appendMessage('user', `Uploaded: ${file.name}`);
-        
-        // Simulating file-based prompt
-        const filePrompt = `I just uploaded a file named ${file.name}. Roast me based on this file and the fact that I think it's good.`;
-        await callGemini(filePrompt);
+  async function processAndRoastFile(file) {
+    appendUser('Uploaded: ' + file.name, true);
+    const prompt = await extractFilePrompt(file);
+    await callAPI(prompt);
+  }
+
+  // ── MESSAGING ─────────────────────────────────────────────
+  function checkEnter(e) {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+  }
+
+  function autoResize(el) {
+    el.style.height = 'auto';
+    el.style.height = Math.min(el.scrollHeight, 120) + 'px';
+  }
+
+  async function sendMessage() {
+    const input = document.getElementById('user-input');
+    const val = input.value.trim();
+    if (!val && !pendingFilePrompt) return;
+
+    const filePrompt = pendingFilePrompt;
+    pendingFilePrompt = null;
+    document.getElementById('attach-label').textContent = '';
+    document.getElementById('attach-btn').classList.remove('active');
+    document.getElementById('chat-file').value = '';
+
+    if (val) appendUser(val);
+    input.value = '';
+    input.style.height = 'auto';
+
+    const prompt = filePrompt
+      ? (val ? `${filePrompt}\n\nUser also says: ${val}` : filePrompt)
+      : val;
+
+    await callAPI(prompt);
+  }
+
+  // ── API CALL ──────────────────────────────────────────────
+  async function callAPI(userPrompt) {
+    showThinking();
+    document.getElementById('send-btn').disabled = true;
+    msgCount++;
+
+    try {
+      const response = await fetch('/api/roast', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt: userPrompt, history: chatHistory })
+      });
+
+      const data = await response.json();
+      removeThinking();
+
+      // Check if time for aukaat check
+      if (msgCount >= MAX_MSGS) {
+        appendBot(data.text);
+        setTimeout(() => deliverAukaat(), 1500);
+      } else {
+        appendBot(data.text);
+      }
+
+      chatHistory.push({ role: 'user', parts: [{ text: userPrompt }] });
+      chatHistory.push({ role: 'model', parts: [{ text: data.text }] });
+
+    } catch (err) {
+      removeThinking();
+      appendBot("Bhai tera connection mara hua hai ya mera server. Dono equally sad situations hain.");
+    } finally {
+      document.getElementById('send-btn').disabled = false;
     }
+  }
 
-    function appendMessage(role, text) {
-        const msgDiv = document.createElement('div');
-        msgDiv.className = `msg ${role}`;
-        msgDiv.innerText = text;
-        document.getElementById('messages').appendChild(msgDiv);
-        const container = document.getElementById('messages');
-        container.scrollTop = container.scrollHeight;
+  async function deliverAukaat() {
+    showThinking();
+    try {
+      const response = await fetch('/api/roast', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          prompt: "Deliver the final Aukaat Check — one single calm, brutal one-liner that implies this person should stop whatever they are doing and open a chai tapri instead. No setup. Just the line.",
+          history: chatHistory
+        })
+      });
+      const data = await response.json();
+      removeThinking();
+      appendAukaat(data.text);
+
+      // Lock input
+      document.getElementById('user-input').disabled = true;
+      document.getElementById('user-input').placeholder = 'Session ended.';
+      document.getElementById('send-btn').disabled = true;
+    } catch {
+      removeThinking();
     }
+  }
 
-    function showThinking() {
-        const div = document.createElement('div');
-        div.className = 'msg bot';
-        div.id = 'thinking';
-        div.innerHTML = '<div class="thinking-dots"><span></span><span></span><span></span></div>';
-        document.getElementById('messages').appendChild(div);
+  // ── DOM HELPERS ────────────────────────────────────────────
+  function appendUser(text, isFile) {
+    const div = document.createElement('div');
+    div.className = 'msg user';
+    if (isFile) {
+      div.innerHTML = `<div class="file-badge">FILE</div><br>${escHtml(text)}`;
+    } else {
+      div.textContent = text;
     }
+    document.getElementById('messages').appendChild(div);
+    scrollBottom();
+  }
 
-    async function callGemini(userPrompt) {
-        showThinking();
-        const btn = document.getElementById('send-btn');
-        btn.disabled = true;
+  function appendBot(text) {
+    const div = document.createElement('div');
+    div.className = 'msg bot';
+    div.textContent = text;
+    document.getElementById('messages').appendChild(div);
+    scrollBottom();
+  }
 
-        try {
-            const response = await fetch('/api/roast', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ prompt: userPrompt, history: chatHistory })
-            });
-            
-            const data = await response.json();
-            document.getElementById('thinking').remove();
-            
-            appendMessage('bot', data.text);
+  function appendAukaat(text) {
+    const div = document.createElement('div');
+    div.className = 'aukaat-block';
+    div.innerHTML = `<div class="aukaat-label">Aukaat Check</div><div class="aukaat-text">${escHtml(text)}</div>`;
+    document.getElementById('messages').appendChild(div);
+    scrollBottom();
+  }
 
-            // Update local memory
-            chatHistory.push({ role: 'user', parts: [{ text: userPrompt }] });
-            chatHistory.push({ role: 'model', parts: [{ text: data.text }] });
+  function showThinking() {
+    const div = document.createElement('div');
+    div.className = 'msg bot';
+    div.id = 'thinking';
+    div.innerHTML = '<div class="thinking"><span></span><span></span><span></span></div>';
+    document.getElementById('messages').appendChild(div);
+    scrollBottom();
+  }
 
-        } catch (error) {
-            document.getElementById('thinking').remove();
-            appendMessage('bot', "Bhai tera internet mara hua hai ya mera server. Dono hi dukhbhari baatein hain.");
-        } finally {
-            btn.disabled = false;
-        }
-    }
+  function removeThinking() {
+    const el = document.getElementById('thinking');
+    if (el) el.remove();
+  }
 
-    async function sendMessage() {
-        const input = document.getElementById('user-input');
-        const val = input.value.trim();
-        if(!val) return;
-        
-        appendMessage('user', val);
-        input.value = '';
-        await callGemini(val);
-    }
+  function scrollBottom() {
+    const m = document.getElementById('messages');
+    m.scrollTop = m.scrollHeight;
+  }
 
-    function checkEnter(e) {
-        if(e.key === 'Enter' && !e.shiftKey) {
-            e.preventDefault();
-            sendMessage();
-        }
-    }
+  function escHtml(s) {
+    return (s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
 </script>
 </body>
 </html>
