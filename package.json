@@ -1,7 +1,13 @@
 {
-  "name": "judge-app",
+  "name": "judge-ai-roast",
   "version": "1.0.0",
+  "description": "Brutal Hinglish Roast Bot using Gemini API",
+  "main": "api/roast.js",
   "dependencies": {
-    "@google/generative-ai": "^0.21.0"
+    "@google/generative-ai": "^0.21.0",
+    "express": "^4.18.2"
+  },
+  "engines": {
+    "node": "18.x"
   }
 }
