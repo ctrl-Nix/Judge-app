@@ -44,44 +44,52 @@ module.exports = async function handler(req, res) {
   if (req.method === "OPTIONS") return res.status(200).end();
   if (req.method !== "POST") return res.status(405).end();
 
-  if (!process.env.GROQ_API_KEY) {
-    return res.status(500).json({ text: "GROQ_API_KEY missing in Vercel!" });
+  if (!process.env.GEMINI_API_KEY) {
+    return res.status(500).json({ text: "GEMINI_API_KEY missing in Vercel!" });
   }
 
   try {
     const { prompt, history } = req.body;
 
-    const messages = [
-      { role: "system", content: SYSTEM },
-      ...(history || []).map(m => ({
-        role: m.role === "model" ? "assistant" : "user",
-        content: m.parts?.[0]?.text || m.content || m.text || ""
-      })),
-      { role: "user", content: prompt }
-    ];
+    const historyMessages = (history || []).map(m => ({
+      role: m.role === "model" ? "model" : "user",
+      parts: [{ text: m.parts?.[0]?.text || m.content || m.text || "" }]
+    }));
 
-    const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${process.env.GROQ_API_KEY}`,
-        "Content-Type": "application/json"
+    const body = {
+      system_instruction: {
+        parts: [{ text: SYSTEM }]
       },
-      body: JSON.stringify({
-        model: "llama-3.3-70b-versatile",
-        messages,
-        max_tokens: 200,
+      contents: [
+        ...historyMessages,
+        { role: "user", parts: [{ text: prompt }] }
+      ],
+      generationConfig: {
+        maxOutputTokens: 200,
         temperature: 1.0,
-      })
-    });
+        thinkingConfig: {
+          thinkingBudget: 0
+        }
+      }
+    };
+
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body)
+      }
+    );
 
     const data = await response.json();
 
     if (!response.ok) {
-      console.error("Groq error:", data);
+      console.error("Gemini error:", data);
       return res.status(500).json({ text: "Error: " + (data.error?.message || JSON.stringify(data)) });
     }
 
-    const text = data.choices?.[0]?.message?.content || "...";
+    const text = data.candidates?.[0]?.content?.parts?.[0]?.text || "...";
     res.status(200).json({ text });
 
   } catch (error) {
