@@ -79,19 +79,22 @@ module.exports = async function handler(req, res) {
     }));
 
     const body = {
-      system_instruction: {
+      systemInstruction: {
         parts: [{ text: SYSTEM }]
       },
       contents: [
         ...historyMessages,
         { role: "user", parts: [{ text: prompt }] }
       ],
+      safetySettings: [
+        { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_NONE" },
+        { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK_NONE" },
+        { category: "HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold: "BLOCK_NONE" },
+        { category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_NONE" }
+      ],
       generationConfig: {
         maxOutputTokens: 200,
-        temperature: 1.0,
-        thinkingConfig: {
-          thinkingBudget: 0
-        }
+        temperature: 1.0
       }
     };
 
