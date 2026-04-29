@@ -210,6 +210,25 @@ function handleCommand(cmd) {
   }
 }
 
+// ── SETTINGS ──────────────────────────────────────────────
+function toggleSettings() {
+  const modal = document.getElementById('settings-modal');
+  modal.classList.toggle('open');
+  if (modal.classList.contains('open')) {
+    document.getElementById('user-api-key').value = localStorage.getItem('user_api_key') || '';
+    document.getElementById('model-select').value = localStorage.getItem('chosen_model') || 'gemini-2.0-flash';
+  }
+}
+
+function saveSettings() {
+  const key = document.getElementById('user-api-key').value.trim();
+  const model = document.getElementById('model-select').value;
+  localStorage.setItem('user_api_key', key);
+  localStorage.setItem('chosen_model', model);
+  toggleSettings();
+  appendBot("Terminal reconfigured. System intelligence updated.");
+}
+
 // ── API CALL ──────────────────────────────────────────────
 async function callAPI(payload) {
   showThinking();
@@ -218,6 +237,9 @@ async function callAPI(payload) {
 
   const context = await getContext();
   const userPrompt = payload.file ? (payload.text ? `${payload.file.name || 'File'}: ${payload.text}` : 'Attached a file') : payload.text;
+
+  const userApiKey = localStorage.getItem('user_api_key');
+  const chosenModel = localStorage.getItem('chosen_model') || 'gemini-2.0-flash';
 
   try {
     const response = await fetch('/api/roast', {
@@ -228,7 +250,9 @@ async function callAPI(payload) {
         history: chatHistory,
         context: context,
         msgCount: msgCount,
-        MAX_MSGS: MAX_MSGS 
+        MAX_MSGS: MAX_MSGS,
+        userApiKey: userApiKey,
+        model: chosenModel
       })
     });
 

@@ -80,7 +80,14 @@ module.exports = async function handler(req, res) {
   }
 
   try {
-    const { prompt, history, context, msgCount, MAX_MSGS } = req.body;
+    const { prompt, history, context, msgCount, MAX_MSGS, userApiKey, model } = req.body;
+
+    const apiKey = userApiKey || process.env.GEMINI_API_KEY;
+    const modelName = model || "gemini-2.0-flash";
+
+    if (!apiKey) {
+      return res.status(500).json({ text: "API Key missing! Add it in Settings or the server environment." });
+    }
 
     let userParts = [];
     let textPrompt = "";
@@ -131,7 +138,7 @@ module.exports = async function handler(req, res) {
     };
 
     const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },

@@ -40,8 +40,33 @@
       </div>
     </div>
     <div class="header-right">
+      <button class="reset-btn" onclick="toggleSettings()">Settings</button>
       <button class="reset-btn" onclick="toggleArchive()">Archive</button>
       <button class="reset-btn" onclick="startReset()">Reset</button>
+    </div>
+  </div>
+
+  <div id="settings-modal">
+    <div class="settings-content">
+      <div class="settings-header">
+        <span>Terminal Settings</span>
+        <button onclick="toggleSettings()">&times;</button>
+      </div>
+      <div class="setting-item">
+        <label>Personal API Key (BYOK)</label>
+        <div class="hint">Currently optimized for Gemini. <a href="https://aistudio.google.com/app/apikey" target="_blank" style="color:var(--accent); text-decoration:none;">Get your free key here &rarr;</a></div>
+        <input type="password" id="user-api-key" placeholder="Enter Gemini API Key">
+        <div class="hint">Stored locally. Never sent to our servers.</div>
+      </div>
+      <div class="setting-item">
+        <label>Intelligence Model</label>
+        <select id="model-select">
+          <option value="gemini-2.0-flash">Gemini 2.0 Flash (Fastest)</option>
+          <option value="gemini-1.5-pro">Gemini 1.5 Pro (Most Brutal)</option>
+          <option value="gemini-1.5-flash">Gemini 1.5 Flash (Balanced)</option>
+        </select>
+      </div>
+      <button class="share-btn" style="width:100%; margin-top:1rem;" onclick="saveSettings()">Apply Changes</button>
     </div>
   </div>
 
