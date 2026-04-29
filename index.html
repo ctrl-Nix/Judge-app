@@ -38,8 +38,8 @@
   <div id="messages"></div>
   <div class="input-area">
     <div class="input-inner">
-      <button class="attach-btn" id="attach-btn" title="Attach file">
-        <input type="file" id="chat-file" accept=".pdf,.txt,.md,.js,.py,.doc,.docx,image/*" onchange="handleChatFile(event)" />
+      <button class="attach-btn" id="attach-btn" title="Attach file" onclick="document.getElementById('chat-file').click()">
+        <input type="file" id="chat-file" style="display:none" accept=".pdf,.txt,.md,.js,.py,.doc,.docx,image/*" onchange="handleChatFile(event)" />
         &#x2B06;
       </button>
       <textarea id="user-input" rows="1" placeholder="Bol." onkeydown="checkEnter(event)" oninput="autoResize(this)"></textarea>
