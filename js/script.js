@@ -39,10 +39,49 @@ function startReset() {
 function startChat(openingLine) {
   document.getElementById('landing').style.display = 'none';
   document.getElementById('chat-view').style.display = 'flex';
+  startHeartbeat();
   if (openingLine !== null) {
     const line = openingLine || "Aaj kaise aana hua?";
     setTimeout(() => appendBot(line), 400);
   }
+}
+
+// ── GLOBAL HEARTBEAT ──────────────────────────────────────
+function startHeartbeat() {
+  const countEl = document.querySelector('.heartbeat .count');
+  let current = 2841;
+  setInterval(() => {
+    current += Math.floor(Math.random() * 5) - 2;
+    countEl.textContent = current.toLocaleString();
+  }, 3000);
+}
+
+// ── ARCHIVE (SIN REGISTRY) ────────────────────────────────
+function toggleArchive() {
+  const sidebar = document.getElementById('sidebar-archive');
+  sidebar.classList.toggle('open');
+  if (sidebar.classList.contains('open')) loadArchive();
+}
+
+function archiveRoast(text) {
+  let registry = JSON.parse(localStorage.getItem('sin_registry') || '[]');
+  registry.unshift({ text, date: new Date().toISOString() });
+  localStorage.setItem('sin_registry', JSON.stringify(registry.slice(0, 50)));
+}
+
+function loadArchive() {
+  const list = document.getElementById('archive-list');
+  const registry = JSON.parse(localStorage.getItem('sin_registry') || '[]');
+  if (registry.length === 0) {
+    list.innerHTML = '<div class="archive-item">No sins recorded yet. You are suspiciously clean.</div>';
+    return;
+  }
+  list.innerHTML = registry.map(item => `
+    <div class="archive-item">
+      "${item.text}"
+      <div style="font-size:0.6rem; margin-top:0.5rem; opacity:0.3">${new Date(item.date).toLocaleString()}</div>
+    </div>
+  `).join('');
 }
 
 // ── FILE HANDLING ─────────────────────────────────────────
@@ -56,7 +95,6 @@ async function handleFile(e) {
 async function handleChatFile(e) {
   const file = e.target.files[0];
   if (!file) return;
-  document.getElementById('attach-label').textContent = file.name + ' — attached';
   document.getElementById('attach-btn').classList.add('active');
   pendingFilePrompt = await extractFilePrompt(file);
 }
@@ -72,17 +110,9 @@ async function extractFilePrompt(file) {
         const content = await page.getTextContent();
         fullText += content.items.map(item => item.str).join(' ') + '\n';
       }
-      return `The user uploaded a PDF named "${file.name}". Content:\n\n${fullText.slice(0, 3000)}\n\nRoast this brutally — the content, the effort, the fact that they thought uploading this was a good idea.`;
+      return `The user uploaded a PDF named "${file.name}". Content:\n\n${fullText.slice(0, 3000)}\n\nRoast this brutally.`;
     } catch {
-      return `User uploaded a PDF called "${file.name}" but it was unreadable. Roast them for uploading a broken file.`;
-    }
-  } else if (file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' || file.name.endsWith('.docx')) {
-    try {
-      const arrayBuffer = await file.arrayBuffer();
-      const result = await mammoth.extractRawText({ arrayBuffer });
-      return `The user uploaded a Word Document named "${file.name}". Content:\n\n${result.value.slice(0, 3000)}\n\nRoast this brutally — the content, the effort, the fact that they thought uploading this was a good idea.`;
-    } catch {
-      return `User uploaded a Document called "${file.name}" but it was unreadable. Roast them for uploading a broken file.`;
+      return `User uploaded a PDF called "${file.name}" but it was unreadable. Roast them.`;
     }
   } else if (file.type.startsWith('image/')) {
     const base64 = await new Promise((resolve) => {
@@ -94,9 +124,9 @@ async function extractFilePrompt(file) {
   } else {
     try {
       const text = await file.text();
-      return `The user uploaded a file named "${file.name}". Content:\n\n${text.slice(0, 3000)}\n\nRoast this. The content, the effort, the audacity.`;
+      return `The user uploaded a file named "${file.name}". Content:\n\n${text.slice(0, 3000)}\n\nRoast this.`;
     } catch {
-      return `User uploaded "${file.name}". Roast them for uploading something unreadable.`;
+      return `User uploaded "${file.name}". Roast them.`;
     }
   }
 }
@@ -121,6 +151,12 @@ async function sendMessage() {
   const input = document.getElementById('user-input');
   const val = input.value.trim();
   
+  if (val.startsWith('/')) {
+    handleCommand(val);
+    input.value = '';
+    return;
+  }
+
   if (val.length < 4 && !pendingFilePrompt) {
     boredomCount++;
     if (boredomCount >= 3) {
@@ -129,15 +165,12 @@ async function sendMessage() {
       setTimeout(() => { input.disabled = false; input.focus(); boredomCount = 0; }, 5000);
       return;
     }
-  } else {
-    boredomCount = 0;
-  }
+  } else { boredomCount = 0; }
 
   if (!val && !pendingFilePrompt) return;
 
   const filePrompt = pendingFilePrompt;
   pendingFilePrompt = null;
-  document.getElementById('attach-label').textContent = '';
   document.getElementById('attach-btn').classList.remove('active');
   document.getElementById('chat-file').value = '';
 
@@ -151,11 +184,30 @@ async function sendMessage() {
   input.value = '';
   input.style.height = 'auto';
 
-  const promptPayload = filePrompt
-    ? { file: filePrompt, text: val }
-    : { text: val };
-
+  const promptPayload = filePrompt ? { file: filePrompt, text: val } : { text: val };
   await callAPI(promptPayload);
+}
+
+// ── HACKER COMMANDS ───────────────────────────────────────
+function handleCommand(cmd) {
+  const c = cmd.toLowerCase().split(' ')[0];
+  switch (c) {
+    case '/aukaat':
+      deliverAukaat();
+      break;
+    case '/mercy':
+      appendBot("Mercy? In this economy? You're lucky I even responded.");
+      break;
+    case '/clear':
+      localStorage.removeItem('sin_registry');
+      appendBot("Registry wiped. Your sins are gone, but your character remains flawed.");
+      break;
+    case '/identity':
+      appendBot("I am the Judge. You are the subject. The hierarchy is clear.");
+      break;
+    default:
+      appendBot(`Unknown command: ${c}. Even your hacks are mediocre.`);
+  }
 }
 
 // ── API CALL ──────────────────────────────────────────────
@@ -186,6 +238,7 @@ async function callAPI(payload) {
     if (data.text) {
       shakeScreen();
       appendBot(data.text);
+      archiveRoast(data.text);
       if (data.triggerAukaat) {
         setTimeout(() => deliverAukaat(), 1500);
       }
@@ -209,15 +262,15 @@ async function deliverAukaat() {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        prompt: "Deliver the final Aukaat Check — one single calm, brutal one-liner that implies this person should stop whatever they are doing and open a chai tapri instead. No setup. Just the line.",
+        prompt: "Deliver the final Aukaat Check — one single calm, brutal one-liner. No setup.",
         history: chatHistory
       })
     });
     const data = await response.json();
     removeThinking();
     appendAukaat(data.text);
+    archiveRoast("FINAL VERDICT: " + data.text);
 
-    // Lock input
     document.getElementById('user-input').disabled = true;
     document.getElementById('user-input').placeholder = 'Session ended.';
     document.getElementById('send-btn').disabled = true;
@@ -255,7 +308,7 @@ function appendAukaat(text) {
       <div class="aukaat-label">Final Aukaat Check</div>
       <div class="aukaat-text">${escHtml(text)}</div>
       <div class="share-row">
-        <button class="reset-btn" onclick="startReset()">New Session</button>
+        <button class="reset-btn" onclick="startReset()">Reset</button>
         <button class="share-btn" onclick="copyRoast('${text.replace(/'/g, "\\'")}')">Copy Verdict</button>
       </div>
     </div>

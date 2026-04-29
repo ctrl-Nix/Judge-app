@@ -13,6 +13,7 @@
   --glass-blur: blur(16px);
   --glass-sh: 0 8px 32px 0 rgba(0, 0, 0, 0.8);
   --neon-sh: 0 0 15px var(--accent-glow);
+  --neon-text: 0 0 8px var(--accent-glow);
 }
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -121,7 +122,7 @@ body, html {
 }
 
 .chat-header {
-  padding: 1.5rem 3rem;
+  padding: 1rem 2.5rem;
   background: rgba(0,0,0,0.6);
   backdrop-filter: var(--glass-blur);
   -webkit-backdrop-filter: var(--glass-blur);
@@ -130,7 +131,7 @@ body, html {
   justify-content: space-between;
   align-items: center;
   flex-shrink: 0;
-  z-index: 10;
+  z-index: 100;
 }
 
 .chat-brand { font-family: var(--serif); font-size: 2rem; color: var(--accent); font-weight: 700; text-shadow: var(--neon-sh); }
@@ -150,6 +151,82 @@ body, html {
   transition: all 0.2s;
 }
 .reset-btn:hover { background: var(--accent); border-color: var(--accent); color: #fff; box-shadow: var(--neon-sh); }
+
+.heartbeat {
+  font-size: 0.65rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.heartbeat .dot {
+  width: 6px; height: 6px;
+  background: var(--accent);
+  border-radius: 50%;
+  box-shadow: var(--neon-sh);
+  animation: pulse 1s infinite;
+}
+
+.heartbeat .count { color: #fff; font-weight: 800; }
+
+/* SIDEBAR ARCHIVE */
+#sidebar-archive {
+  position: fixed;
+  top: 0; right: -350px;
+  width: 350px; height: 100%;
+  background: rgba(10, 10, 10, 0.95);
+  backdrop-filter: var(--glass-blur);
+  border-left: 1px solid var(--glass-border);
+  z-index: 1000;
+  transition: right 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  padding: 2rem;
+  display: flex;
+  flex-direction: column;
+}
+
+#sidebar-archive.open { right: 0; }
+
+.archive-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+  font-family: var(--serif);
+  font-size: 1.5rem;
+  color: var(--accent);
+}
+
+.archive-header button {
+  background: none; border: none; color: #fff; font-size: 2rem; cursor: pointer;
+}
+
+#archive-list {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.archive-item {
+  padding: 1.25rem;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid var(--glass-border);
+  font-size: 0.85rem;
+  line-height: 1.6;
+  color: #ccc;
+  position: relative;
+}
+
+.archive-item::before {
+  content: 'SIN';
+  position: absolute;
+  top: 5px; right: 10px;
+  font-size: 0.5rem; color: var(--accent); opacity: 0.5;
+}
 
 #messages {
   flex: 1;
