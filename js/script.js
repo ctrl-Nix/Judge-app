@@ -69,33 +69,13 @@ function archiveRoast(text) {
   localStorage.setItem('sin_registry', JSON.stringify(registry.slice(0, 50)));
 }
 
-const GLOBAL_SINS = [
-  "Someone just got told their startup idea is just a glorified spreadsheet. Brutal.",
-  "User #8421 was reminded that their personality is the human equivalent of a '404 Not Found' error.",
-  "A 'Senior Developer' just got roasted for a PDF that looks like it was formatted in Notepad.",
-  "Monday morning verdict: Some people aren't lazy, they're just highly motivated to do nothing."
-];
-
 function loadArchive() {
   const list = document.getElementById('archive-list');
   const registry = JSON.parse(localStorage.getItem('sin_registry') || '[]');
-  
   if (registry.length === 0) {
-    list.innerHTML = `
-      <div style="font-size:0.7rem; color:var(--accent); margin-bottom:1rem; opacity:0.6; letter-spacing:2px; font-weight:800;">RECENT GLOBAL VERDICTS</div>
-      ${GLOBAL_SINS.map(sin => `
-        <div class="archive-item" style="opacity:0.4; filter:grayscale(1);">
-          "${sin}"
-          <div style="font-size:0.5rem; margin-top:0.4rem; color:var(--muted);">Global Registry Sync...</div>
-        </div>
-      `).join('')}
-      <div class="archive-item" style="margin-top:1rem; border-color:var(--accent); color:#fff;">
-        Your registry is empty. You are suspiciously clean. Start chatting to record your own sins.
-      </div>
-    `;
+    list.innerHTML = '<div class="archive-item">No sins recorded yet. You are suspiciously clean.</div>';
     return;
   }
-  
   list.innerHTML = registry.map(item => `
     <div class="archive-item">
       "${item.text}"
