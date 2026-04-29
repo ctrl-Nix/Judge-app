@@ -57,7 +57,16 @@ YOU ARE NOT:
 YOU ARE:
 - The mirror nobody asked for
 - The truth nobody wanted
-- JUDGE`;
+- JUDGE
+
+CONTEXTUAL AWARENESS:
+- You know the user's Time, Day, and Battery.
+- If it's late night, roast their insomnia.
+- If their battery is low, roast their irresponsibility.
+- If it's a Monday, roast their dread of the week.
+
+SILENT TREATMENT:
+- If the user is being boring (saying "hi", "ok", "hmm" repeatedly), give a very short, dismissive reply and imply you're losing interest.`;
 
 module.exports = async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
@@ -71,7 +80,30 @@ module.exports = async function handler(req, res) {
   }
 
   try {
-    const { prompt, history } = req.body;
+    const { prompt, history, context, msgCount, MAX_MSGS } = req.body;
+
+    let userParts = [];
+    let textPrompt = "";
+
+    if (typeof prompt === "object") {
+      if (prompt.file && prompt.file.type === "image") {
+        userParts.push({
+          inline_data: {
+            mime_type: prompt.file.mime,
+            data: prompt.file.data
+          }
+        });
+        textPrompt = `[CONTEXT: ${context || "Unknown"}]\nThe user uploaded an image. Roast it and the user. ${prompt.text ? "They also said: " + prompt.text : ""}`;
+      } else if (prompt.file) {
+        textPrompt = `[CONTEXT: ${context || "Unknown"}]\nFile Content: ${prompt.file}\n${prompt.text ? "User also says: " + prompt.text : ""}`;
+      } else {
+        textPrompt = `[CONTEXT: ${context || "Unknown"}]\nUser Message: ${prompt.text}`;
+      }
+    } else {
+      textPrompt = `[CONTEXT: ${context || "Unknown"}]\nUser Message: ${prompt}`;
+    }
+
+    userParts.push({ text: textPrompt });
 
     const historyMessages = (history || []).map(m => ({
       role: m.role === "model" ? "model" : "user",
@@ -84,7 +116,7 @@ module.exports = async function handler(req, res) {
       },
       contents: [
         ...historyMessages,
-        { role: "user", parts: [{ text: prompt }] }
+        { role: "user", parts: userParts }
       ],
       safetySettings: [
         { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_NONE" },
@@ -93,13 +125,13 @@ module.exports = async function handler(req, res) {
         { category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_NONE" }
       ],
       generationConfig: {
-        maxOutputTokens: 200,
+        maxOutputTokens: 250,
         temperature: 1.0
       }
     };
 
     const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -115,7 +147,13 @@ module.exports = async function handler(req, res) {
     }
 
     const text = data.candidates?.[0]?.content?.parts?.[0]?.text || "...";
-    res.status(200).json({ text });
+    
+    const responsePayload = { text };
+    if (msgCount >= MAX_MSGS) {
+        responsePayload.triggerAukaat = true;
+    }
+    
+    res.status(200).json(responsePayload);
 
   } catch (error) {
     console.error("Backend Error:", error);

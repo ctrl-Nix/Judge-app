@@ -7,9 +7,35 @@ if (typeof pdfjsLib !== 'undefined') {
 let chatHistory = [];
 let pendingFilePrompt = null;
 let msgCount = 0;
-const MAX_MSGS = 10;
+let boredomCount = 0;
+const MAX_MSGS = 12;
+
+async function getContext() {
+  let context = `Time: ${new Date().toLocaleTimeString()}, Day: ${new Date().toLocaleDateString('en-US', { weekday: 'long' })}`;
+  try {
+    const battery = await navigator.getBattery();
+    context += `, Battery: ${Math.round(battery.level * 100)}%${battery.charging ? ' (charging)' : ''}`;
+  } catch (e) {}
+  return context;
+}
+
+function shakeScreen() {
+  const b = document.body;
+  b.style.transition = 'none';
+  b.style.transform = 'translateX(4px)';
+  setTimeout(() => { b.style.transform = 'translateX(-4px)'; setTimeout(() => { b.style.transform = 'none'; }, 50); }, 50);
+}
 
 // ── LANDING ──────────────────────────────────────────────
+function startReset() {
+  const msgs = document.querySelectorAll('.msg, .aukaat-block');
+  if (msgs.length === 0) return location.reload();
+  msgs.forEach((m, i) => {
+    setTimeout(() => m.classList.add('burn'), i * 30);
+  });
+  setTimeout(() => location.reload(), msgs.length * 30 + 500);
+}
+
 function startChat(openingLine) {
   document.getElementById('landing').style.display = 'none';
   document.getElementById('chat-view').style.display = 'flex';
@@ -59,7 +85,12 @@ async function extractFilePrompt(file) {
       return `User uploaded a Document called "${file.name}" but it was unreadable. Roast them for uploading a broken file.`;
     }
   } else if (file.type.startsWith('image/')) {
-    return `User uploaded an image called "${file.name}". Roast them for thinking their image deserves your attention.`;
+    const base64 = await new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result.split(',')[1]);
+      reader.readAsDataURL(file);
+    });
+    return { type: 'image', data: base64, mime: file.type, name: file.name };
   } else {
     try {
       const text = await file.text();
@@ -89,6 +120,19 @@ function autoResize(el) {
 async function sendMessage() {
   const input = document.getElementById('user-input');
   const val = input.value.trim();
+  
+  if (val.length < 4 && !pendingFilePrompt) {
+    boredomCount++;
+    if (boredomCount >= 3) {
+      appendBot("I'm bored of this. Talk properly or don't talk at all.");
+      input.disabled = true;
+      setTimeout(() => { input.disabled = false; input.focus(); boredomCount = 0; }, 5000);
+      return;
+    }
+  } else {
+    boredomCount = 0;
+  }
+
   if (!val && !pendingFilePrompt) return;
 
   const filePrompt = pendingFilePrompt;
@@ -107,35 +151,44 @@ async function sendMessage() {
   input.value = '';
   input.style.height = 'auto';
 
-  const prompt = filePrompt
-    ? (val ? `${filePrompt}\n\nUser also says: ${val}` : filePrompt)
-    : val;
+  const promptPayload = filePrompt
+    ? { file: filePrompt, text: val }
+    : { text: val };
 
-  await callAPI(prompt);
+  await callAPI(promptPayload);
 }
 
 // ── API CALL ──────────────────────────────────────────────
-async function callAPI(userPrompt) {
+async function callAPI(payload) {
   showThinking();
   document.getElementById('send-btn').disabled = true;
   msgCount++;
+
+  const context = await getContext();
+  const userPrompt = payload.file ? (payload.text ? `${payload.file.name || 'File'}: ${payload.text}` : 'Attached a file') : payload.text;
 
   try {
     const response = await fetch('/api/roast', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ prompt: userPrompt, history: chatHistory })
+      body: JSON.stringify({ 
+        prompt: payload, 
+        history: chatHistory,
+        context: context,
+        msgCount: msgCount,
+        MAX_MSGS: MAX_MSGS 
+      })
     });
 
     const data = await response.json();
     removeThinking();
 
-    // Check if time for aukaat check
-    if (msgCount >= MAX_MSGS) {
+    if (data.text) {
+      shakeScreen();
       appendBot(data.text);
-      setTimeout(() => deliverAukaat(), 1500);
-    } else {
-      appendBot(data.text);
+      if (data.triggerAukaat) {
+        setTimeout(() => deliverAukaat(), 1500);
+      }
     }
 
     chatHistory.push({ role: 'user', parts: [{ text: userPrompt }] });
@@ -197,9 +250,27 @@ function appendBot(text) {
 function appendAukaat(text) {
   const div = document.createElement('div');
   div.className = 'aukaat-block';
-  div.innerHTML = `<div class="aukaat-label">Aukaat Check</div><div class="aukaat-text">${escHtml(text)}</div>`;
+  div.innerHTML = `
+    <div class="aukaat-card">
+      <div class="aukaat-label">Final Aukaat Check</div>
+      <div class="aukaat-text">${escHtml(text)}</div>
+      <div class="share-row">
+        <button class="reset-btn" onclick="startReset()">New Session</button>
+        <button class="share-btn" onclick="copyRoast('${text.replace(/'/g, "\\'")}')">Copy Verdict</button>
+      </div>
+    </div>
+  `;
   document.getElementById('messages').appendChild(div);
   scrollBottom();
+}
+
+function copyRoast(text) {
+  const shareText = `Judge AI Verdict:\n"${text}"\n\nCheck yours at Judge.`;
+  navigator.clipboard.writeText(shareText);
+  const btn = event.target;
+  const oldText = btn.textContent;
+  btn.textContent = 'Copied!';
+  setTimeout(() => btn.textContent = oldText, 2000);
 }
 
 function showThinking() {

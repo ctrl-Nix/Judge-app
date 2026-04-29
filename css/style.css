@@ -152,27 +152,80 @@ body, html {
   opacity: 0.7;
 }
 
-/* AUKAAT CHECK */
+/* SHAME CARD */
 .aukaat-block {
   align-self: stretch;
-  border-top: 1px solid var(--accent);
-  padding-top: 1.25rem;
-  margin-top: 0.5rem;
+  margin-top: 1rem;
+  animation: cardIn 0.6s cubic-bezier(0.23, 1, 0.32, 1) both;
 }
+
+.aukaat-card {
+  background: var(--surface);
+  border: 1px solid var(--accent);
+  padding: 2.5rem 2rem;
+  border-radius: 2px;
+  position: relative;
+  overflow: hidden;
+  text-align: center;
+}
+
+.aukaat-card::before {
+  content: 'OFFICIAL VERDICT';
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  font-size: 0.5rem;
+  color: var(--accent);
+  letter-spacing: 2px;
+  opacity: 0.5;
+}
+
 .aukaat-label {
+  font-family: var(--sans);
   font-size: 0.65rem;
-  font-weight: 600;
-  letter-spacing: 0.2em;
+  font-weight: 700;
+  letter-spacing: 0.3em;
   text-transform: uppercase;
   color: var(--accent);
-  margin-bottom: 0.5rem;
-  font-family: var(--sans);
+  margin-bottom: 1.5rem;
 }
+
 .aukaat-text {
   font-family: var(--serif);
-  font-style: italic;
-  font-size: 1.1rem;
+  font-size: 1.75rem;
   color: var(--text);
+  line-height: 1.2;
+  margin-bottom: 2rem;
+}
+
+.share-row {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.share-btn {
+  background: none;
+  border: 1px solid var(--border);
+  color: var(--muted);
+  padding: 0.4rem 1rem;
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: all 0.2s;
+}
+
+.share-btn:hover {
+  border-color: var(--accent);
+  color: var(--text);
+}
+
+@keyframes cardIn {
+  from { opacity: 0; transform: scale(0.95) translateY(10px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
 }
 
 /* INPUT */
@@ -226,6 +279,7 @@ body, html {
 }
 #user-input:focus { border-color: #333331; }
 #user-input::placeholder { color: #3a3935; }
+#user-input:disabled { background: #0a0a0a; color: #3a3935; border-color: #1a1a19; cursor: not-allowed; }
 
 .send-btn {
   flex-shrink: 0;
@@ -277,4 +331,15 @@ body, html {
   .msg { max-width: 92%; }
   #messages { padding: 1.25rem 1rem; }
   .input-area { padding: 0.75rem 1rem; }
+}
+
+.burn {
+  animation: burnAway 0.5s ease-out forwards;
+  pointer-events: none;
+}
+
+@keyframes burnAway {
+  0% { filter: brightness(1); transform: scale(1); opacity: 1; }
+  50% { filter: brightness(3) sepia(1) hue-rotate(-50deg); transform: scale(1.02); opacity: 0.8; }
+  100% { filter: brightness(0); transform: scale(0.9); opacity: 0; }
 }
