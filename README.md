@@ -14,7 +14,7 @@
     - `/identity` — Hierarchy clarification.
 - **The Silent Treatment**: Low-effort users are ignored and locked out of the interface.
 - **Global Heartbeat**: A live (simulated) tracker of egos being dismantled in real-time.
-- **Aukaat Card**: A high-contrast, shareable verdict card for viral shame.
+- **Aukaat Card**: A high-contrast, shareable verdict card. Download as a high-res image to post on social media and shame yourself publicly.
 
 ## 🛠 Tech Stack
 

@@ -327,18 +327,52 @@ function appendBot(text) {
 function appendAukaat(text) {
   const div = document.createElement('div');
   div.className = 'aukaat-block';
+  const id = 'aukaat-' + Date.now();
   div.innerHTML = `
-    <div class="aukaat-card">
+    <div class="aukaat-card" id="${id}">
       <div class="aukaat-label">Final Aukaat Check</div>
       <div class="aukaat-text">${escHtml(text)}</div>
       <div class="share-row">
-        <button class="reset-btn" onclick="startReset()">Reset</button>
-        <button class="share-btn" onclick="copyRoast('${text.replace(/'/g, "\\'")}')">Copy Verdict</button>
+        <button class="reset-btn no-capture" onclick="startReset()">Reset</button>
+        <button class="share-btn no-capture" onclick="downloadAukaat('${id}')">Save Card</button>
+        <button class="share-btn no-capture" onclick="copyRoast('${text.replace(/'/g, "\\'")}')">Copy</button>
       </div>
     </div>
   `;
   document.getElementById('messages').appendChild(div);
   scrollBottom();
+}
+
+async function downloadAukaat(id) {
+  const card = document.getElementById(id);
+  const btn = event.target;
+  const oldText = btn.textContent;
+  btn.textContent = 'Generating...';
+
+  // Hide buttons during capture
+  const buttons = card.querySelectorAll('.no-capture');
+  buttons.forEach(b => b.style.opacity = '0');
+
+  try {
+    const canvas = await html2canvas(card, {
+      backgroundColor: '#050505',
+      scale: 2, // Higher quality
+      logging: false,
+      useCORS: true
+    });
+    
+    const link = document.createElement('a');
+    link.download = `Judge_Verdict_${Date.now()}.png`;
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+    btn.textContent = 'Saved!';
+  } catch (err) {
+    console.error(err);
+    btn.textContent = 'Error';
+  } finally {
+    buttons.forEach(b => b.style.opacity = '1');
+    setTimeout(() => btn.textContent = oldText, 2000);
+  }
 }
 
 function copyRoast(text) {
